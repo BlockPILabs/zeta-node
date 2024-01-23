@@ -30,6 +30,7 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/zeta-chain/zetacore/rpc/cache"
 	rpctypes "github.com/zeta-chain/zetacore/rpc/types"
 )
 
@@ -216,19 +217,28 @@ func (b *Backend) FeeHistory(
 		// #nosec G701 range checked
 		index := int32(blockID - blockStart)
 		// tendermint block
-		tendermintblock, err := b.TendermintBlockByNumber(rpctypes.BlockNumber(blockID))
+		var err error
+		tendermintblock, _ := cache.Get[*tmrpctypes.ResultBlock](fmt.Sprintf("TendermintBlockByNumber-%d", blockID))
+		if tendermintblock == nil {
+			tendermintblock, err = b.TendermintBlockByNumber(rpctypes.BlockNumber(blockID))
+		}
 		if tendermintblock == nil {
 			return nil, err
 		}
-
 		// eth block
-		ethBlock, err := b.GetBlockByNumber(rpctypes.BlockNumber(blockID), true)
+		ethBlock, _ := cache.Get[map[string]any](fmt.Sprintf("GetBlockByNumber-%d-true", blockID))
+		if ethBlock == nil {
+			ethBlock, err = b.GetBlockByNumber(rpctypes.BlockNumber(blockID), true)
+		}
 		if ethBlock == nil {
 			return nil, err
 		}
 
 		// tendermint block result
-		tendermintBlockResult, err := b.TendermintBlockResultByNumber(&tendermintblock.Block.Height)
+		tendermintBlockResult, _ := cache.Get[*tmrpctypes.ResultBlockResults](fmt.Sprintf("TendermintBlockResultByNumber-%d", tendermintblock.Block.Height))
+		if tendermintblock == nil {
+			tendermintBlockResult, err = b.TendermintBlockResultByNumber(&tendermintblock.Block.Height)
+		}
 		if tendermintBlockResult == nil {
 			b.logger.Debug("block result not found", "height", tendermintblock.Block.Height, "error", err.Error())
 			return nil, err

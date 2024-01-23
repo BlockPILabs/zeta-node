@@ -87,6 +87,7 @@ require (
 	github.com/linxGnu/grocksdb v1.7.15 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.7 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/prometheus/tsdb v0.7.1 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-19 v0.3.3 // indirect
