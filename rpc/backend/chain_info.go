@@ -30,8 +30,8 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/zeta-chain/zetacore/rpc/cache"
 	rpctypes "github.com/zeta-chain/zetacore/rpc/types"
+	"github.com/zeta-chain/zetacore/rpc/x"
 )
 
 // ChainID is the EIP-155 replay-protection chain id for the current ethereum chain config.
@@ -218,7 +218,7 @@ func (b *Backend) FeeHistory(
 		index := int32(blockID - blockStart)
 		// tendermint block
 		var err error
-		tendermintblock, _ := cache.Get[*tmrpctypes.ResultBlock](fmt.Sprintf("TendermintBlockByNumber-%d", blockID))
+		tendermintblock, _ := x.Get[*tmrpctypes.ResultBlock](fmt.Sprintf("TendermintBlockByNumber-%d", blockID))
 		if tendermintblock == nil {
 			tendermintblock, err = b.TendermintBlockByNumber(rpctypes.BlockNumber(blockID))
 		}
@@ -226,7 +226,7 @@ func (b *Backend) FeeHistory(
 			return nil, err
 		}
 		// eth block
-		ethBlock, _ := cache.Get[map[string]any](fmt.Sprintf("GetBlockByNumber-%d-true", blockID))
+		ethBlock, _ := x.Get[map[string]any](fmt.Sprintf("GetBlockByNumber-%d-true", blockID))
 		if ethBlock == nil {
 			ethBlock, err = b.GetBlockByNumber(rpctypes.BlockNumber(blockID), true)
 		}
@@ -235,7 +235,7 @@ func (b *Backend) FeeHistory(
 		}
 
 		// tendermint block result
-		tendermintBlockResult, _ := cache.Get[*tmrpctypes.ResultBlockResults](fmt.Sprintf("TendermintBlockResultByNumber-%d", tendermintblock.Block.Height))
+		tendermintBlockResult, _ := x.Get[*tmrpctypes.ResultBlockResults](fmt.Sprintf("TendermintBlockResultByNumber-%d", tendermintblock.Block.Height))
 		if tendermintblock == nil {
 			tendermintBlockResult, err = b.TendermintBlockResultByNumber(&tendermintblock.Block.Height)
 		}
