@@ -79,7 +79,13 @@ func (b *Backend) GlobalMinGasPrice() (sdk.Dec, error) {
 // return nil.
 func (b *Backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, error) {
 	// return BaseFee if London hard fork is activated and feemarket is enabled
-	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+	var err error
+	cacheKey := fmt.Sprintf("BaseFee-%d", blockRes.Height)
+	res, _ := x.Get[*evmtypes.QueryBaseFeeResponse](cacheKey)
+	if res == nil {
+		res, err = b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
+		x.Set(cacheKey, res)
+	}
 	if err != nil || res.BaseFee == nil {
 		// we can't tell if it's london HF not enabled or the state is pruned,
 		// in either case, we'll fallback to parsing from begin blocker event,
@@ -218,26 +224,32 @@ func (b *Backend) FeeHistory(
 		index := int32(blockID - blockStart)
 		// tendermint block
 		var err error
-		tendermintblock, _ := x.Get[*tmrpctypes.ResultBlock](fmt.Sprintf("TendermintBlockByNumber-%d", blockID))
+		var cacheKey = fmt.Sprintf("TendermintBlockByNumber-%d", blockID)
+		tendermintblock, _ := x.Get[*tmrpctypes.ResultBlock](cacheKey)
 		if tendermintblock == nil {
 			tendermintblock, err = b.TendermintBlockByNumber(rpctypes.BlockNumber(blockID))
+			x.Set(cacheKey, tendermintblock)
 		}
 		if tendermintblock == nil {
 			return nil, err
 		}
 		// eth block
-		ethBlock, _ := x.Get[map[string]any](fmt.Sprintf("GetBlockByNumber-%d-true", blockID))
+		cacheKey = fmt.Sprintf("GetBlockByNumber-%d-true", blockID)
+		ethBlock, _ := x.Get[map[string]any](cacheKey)
 		if ethBlock == nil {
 			ethBlock, err = b.GetBlockByNumber(rpctypes.BlockNumber(blockID), true)
+			x.Set(cacheKey, ethBlock)
 		}
 		if ethBlock == nil {
 			return nil, err
 		}
 
 		// tendermint block result
-		tendermintBlockResult, _ := x.Get[*tmrpctypes.ResultBlockResults](fmt.Sprintf("TendermintBlockResultByNumber-%d", tendermintblock.Block.Height))
-		if tendermintblock == nil {
+		cacheKey = fmt.Sprintf("TendermintBlockResultByNumber-%d", tendermintblock.Block.Height)
+		tendermintBlockResult, _ := x.Get[*tmrpctypes.ResultBlockResults](cacheKey)
+		if tendermintBlockResult == nil {
 			tendermintBlockResult, err = b.TendermintBlockResultByNumber(&tendermintblock.Block.Height)
+			x.Set(cacheKey, tendermintBlockResult)
 		}
 		if tendermintBlockResult == nil {
 			b.logger.Debug("block result not found", "height", tendermintblock.Block.Height, "error", err.Error())

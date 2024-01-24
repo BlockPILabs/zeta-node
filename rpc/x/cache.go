@@ -19,5 +19,9 @@ func Set(key any, val any) {
 
 func Get[T any](key any) (T, bool) {
 	val, found := defaultCache.Get(cast.ToString(key))
-	return val.(T), found
+	if val != nil {
+		return val.(T), found
+	}
+	var v T
+	return v, found
 }
